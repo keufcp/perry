@@ -94,6 +94,27 @@ A dropdown selection control. Items are added with `pickerAddItem`.
 {{#include ../../examples/ui/widgets/picker.ts}}
 ```
 
+## WheelPicker
+
+A drum-roll selector for long sequential ranges — hours, minutes, quantities.
+`Picker` is a segmented control on iOS and a dropdown elsewhere, both of which
+degrade past about five items; `WheelPicker` stays usable at sixty.
+
+Items are appended with `wheelPickerAddItem` and `onChange` receives the
+selected **index**, matching `Picker`. `wheelPickerSetSelected` moves the wheel
+without firing `onChange` — a programmatic move is not a user choice.
+`wheelPickerGetSelected` returns `-1` while the wheel is empty.
+
+Backends use each platform's native wheel where one exists — `UIPickerView` on
+iOS/tvOS/visionOS, `WKInterfacePicker` on watchOS, `NumberPicker` on Android —
+and a custom-drawn snapping column on macOS, Windows and GTK4, none of which
+ship a wheel control. Snap and deceleration are present everywhere; haptics
+come from the OS and so exist only on the native-wheel backends.
+
+```typescript,no-test
+{{#include ../../examples/ui/widgets/wheel_picker.ts}}
+```
+
 ## ImageFile / ImageSymbol
 
 Two distinct constructors:

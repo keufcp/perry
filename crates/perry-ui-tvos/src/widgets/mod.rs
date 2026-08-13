@@ -25,6 +25,7 @@ pub mod textfield;
 pub mod toast;
 pub mod toggle;
 pub mod vstack;
+pub mod wheel_picker;
 pub mod zstack;
 
 use objc2::rc::Retained;

@@ -384,6 +384,54 @@ pub(crate) const ROWS: &[Feature] = &[
         web: S,
         web_name: None,
     },
+    // ── WheelPicker (#5873) ──────────────────────────────────────────────
+    // Native wheel on iOS (UIPickerView) and Android (NumberPicker);
+    // custom-drawn snapping column on macOS, Windows and GTK4, which have no
+    // wheel control; CSS scroll-snap on web.
+    Feature {
+        name: "perry_ui_wheelpicker_create",
+        category: Picker,
+        macos: S,
+        ios: S,
+        android: S,
+        gtk4: S,
+        windows: S,
+        web: S,
+        web_name: None,
+    },
+    Feature {
+        name: "perry_ui_wheelpicker_add_item",
+        category: Picker,
+        macos: S,
+        ios: S,
+        android: S,
+        gtk4: S,
+        windows: S,
+        web: S,
+        web_name: None,
+    },
+    Feature {
+        name: "perry_ui_wheelpicker_set_selected",
+        category: Picker,
+        macos: S,
+        ios: S,
+        android: S,
+        gtk4: S,
+        windows: S,
+        web: S,
+        web_name: None,
+    },
+    Feature {
+        name: "perry_ui_wheelpicker_get_selected",
+        category: Picker,
+        macos: S,
+        ios: S,
+        android: S,
+        gtk4: S,
+        windows: S,
+        web: S,
+        web_name: None,
+    },
     // ── Image ────────────────────────────────────────────────────────────
     Feature {
         name: "perry_ui_image_create_file",

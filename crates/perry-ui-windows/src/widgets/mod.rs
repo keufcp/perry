@@ -41,6 +41,7 @@ pub mod toggle;
 pub mod tree_view;
 pub mod vstack;
 pub mod webview;
+pub mod wheel_picker;
 pub mod zstack;
 
 use std::cell::RefCell;
@@ -88,6 +89,8 @@ pub enum WidgetKind {
     TreeView,
     RichText,
     Chart,
+    /// Issue #5873 — custom-drawn drum column (`PerryWheelPicker` class).
+    WheelPicker,
 }
 
 pub struct WidgetEntry {

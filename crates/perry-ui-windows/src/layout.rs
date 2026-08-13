@@ -542,6 +542,18 @@ fn measure_intrinsic(handle: i64, kind: &WidgetKind, vertical: bool, cross_size:
                 dpi(280)
             }
         }
+        // WheelPicker (#5873). Height is the five visible rows the widget
+        // draws; width is a narrow column, since a wheel is normally one of
+        // several side by side. An app that sets a font size large enough to
+        // grow the rows should also set an explicit height — the fixed
+        // dimensions checked at the top of this function win over this.
+        WidgetKind::WheelPicker => {
+            if vertical {
+                dpi(140)
+            } else {
+                dpi(90)
+            }
+        }
     }
 }
 

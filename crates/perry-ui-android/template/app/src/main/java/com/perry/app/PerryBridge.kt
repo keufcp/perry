@@ -458,6 +458,19 @@ object PerryBridge {
         }
     }
 
+    // --- WheelPicker (#5873) ---
+    //
+    // The wheel is `PerryWheelPickerView`, not `android.widget.NumberPicker`:
+    // NumberPicker's public SDK surface cannot express font weight or a
+    // distinct selected-row colour, which would have left
+    // `wheelPickerSetFontWeight` accepted-but-inert on Android alone. See that
+    // class's header for the full reasoning and for what it reimplements
+    // (fling physics, per-detent haptics, accessibility).
+    //
+    // It needs no bridge helpers: Rust holds the view and calls its methods
+    // directly, and the view reports changes through `nativeInvokeCallback1`
+    // itself.
+
     // --- Context menu ---
 
     @JvmStatic

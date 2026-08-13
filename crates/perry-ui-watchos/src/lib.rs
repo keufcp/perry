@@ -17,6 +17,7 @@ pub mod notifications;
 pub mod state;
 pub mod system;
 pub mod tree;
+pub mod wheel_picker;
 pub mod widgets;
 
 use std::ffi::CString;

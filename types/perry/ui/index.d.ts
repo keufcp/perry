@@ -1441,6 +1441,74 @@ export function pickerGetSelected(picker: Widget): number;
 export function pickerSetSelected(picker: Widget, index: number): void;
 
 // ---------------------------------------------------------------------------
+// WheelPicker widget (issue #5873, v1) — drum-roll selector for long
+// sequential ranges (hours 0–23, minutes 0–59, quantities). The complement to
+// `Picker`, which is a segmented control on iOS and a dropdown elsewhere and
+// so degrades badly past ~5 items. Backends use each platform's native wheel
+// where one exists, and a custom-drawn snapping column where none does:
+//   iOS/visionOS  UIPickerView, one component
+//   tvOS          UIPickerView (focus-driven; swipe advances the wheel)
+//   watchOS       WKInterfacePicker
+//   Android       custom drum view (`PerryWheelPickerView` in the app
+//                 template) — `NumberPicker` cannot express font weight or a
+//                 distinct selected-row colour through its public SDK
+//   macOS         AppKit has no wheel control — NSScrollView over a
+//                 custom-drawn column with snap-to-item
+//   Windows       Win32 has no wheel control — owner-draw window class,
+//                 WM_PAINT + WM_MOUSEWHEEL (same shape as Chart / ScrollView)
+//   GTK4          GTK has no wheel control — GtkDrawingArea with snap
+//   Web/WASM      CSS `scroll-snap-type: y mandatory`
+//
+// `onChange` receives the selected INDEX, not the item text — matching
+// `Picker` — and fires ONCE PER GESTURE, when the wheel comes to rest. It does
+// not report the rows the drum passed on the way: a fling across twenty rows
+// is one choice, not twenty. Poll `wheelPickerGetSelected` if you need the
+// live value mid-spin. (This is also the only contract that can hold on every
+// backend — `UIPickerView` reports settled selections and nothing else.)
+//
+// Items are appended one at a time, so the selection is 0 until the
+// first item lands; `wheelPickerGetSelected` returns -1 on an empty wheel.
+//
+// Snap and deceleration are present on every backend. Haptics come from the
+// OS on iOS/tvOS/visionOS/watchOS and are driven explicitly on Android
+// (CLOCK_TICK per detent); the desktop backends have no haptics API to call.
+// ---------------------------------------------------------------------------
+
+export function WheelPicker(onChange: (index: number) => void): Widget;
+export function wheelPickerAddItem(wheelPicker: Widget, title: string): void;
+export function wheelPickerGetSelected(wheelPicker: Widget): number;
+export function wheelPickerSetSelected(wheelPicker: Widget, index: number): void;
+
+// Row typography. The wheel draws its own rows — they are not `Text` widgets,
+// so `textSetFontSize` and friends cannot reach them. `weight` follows the CSS
+// scale (400 normal, 700 bold), matching `textSetFontWeight`. Colours are
+// 0..1 RGBA. `wheelPickerSetTextColor` styles the unselected neighbours;
+// `wheelPickerSetSelectedTextColor` styles the row inside the selection band,
+// and defaults to the same colour if never set.
+//
+// Every backend honours all four on every supported version. Android draws
+// the wheel itself for exactly this reason: `android.widget.NumberPicker`
+// exposes only `setTextSize` and `setTextColor` publicly, so building on it
+// would have left `wheelPickerSetFontWeight` and
+// `wheelPickerSetSelectedTextColor` accepted-but-inert on that one platform.
+export function wheelPickerSetFontSize(wheelPicker: Widget, size: number): void;
+export function wheelPickerSetFontWeight(wheelPicker: Widget, weight: number): void;
+export function wheelPickerSetTextColor(
+    wheelPicker: Widget,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+): void;
+export function wheelPickerSetSelectedTextColor(
+    wheelPicker: Widget,
+    r: number,
+    g: number,
+    b: number,
+    a: number,
+): void;
+
+// ---------------------------------------------------------------------------
 // TabBar
 // ---------------------------------------------------------------------------
 

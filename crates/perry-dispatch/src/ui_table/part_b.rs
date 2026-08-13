@@ -383,6 +383,79 @@ pub(crate) const PERRY_UI_TABLE_PART_B: &[MethodRow] = &[
         args: &[ArgKind::Widget, ArgKind::I64Raw],
         ret: ReturnKind::Void,
     },
+    // ---- WheelPicker (#5873) ----
+    // Drum-roll selector for long sequential ranges (hours 0–23, minutes
+    // 0–59, quantities). `Picker` is a segmented control on iOS and a
+    // dropdown on Windows/Android, both of which degrade badly past ~5
+    // items — see the d.ts header block for the per-platform mapping.
+    //
+    // Single `Closure` arg on the constructor, matching `Picker`: a
+    // multi-arg constructor mis-binds `on_change` on the Windows x64 ABI
+    // (#5491), which is also why there is no `.wheel` style variant of
+    // `Picker` — its row would have to grow an argument.
+    MethodRow {
+        method: "WheelPicker",
+        runtime: "perry_ui_wheelpicker_create",
+        args: &[ArgKind::Closure],
+        ret: ReturnKind::Widget,
+    },
+    MethodRow {
+        method: "wheelPickerAddItem",
+        runtime: "perry_ui_wheelpicker_add_item",
+        args: &[ArgKind::Widget, ArgKind::Str],
+        ret: ReturnKind::Void,
+    },
+    MethodRow {
+        method: "wheelPickerGetSelected",
+        runtime: "perry_ui_wheelpicker_get_selected",
+        args: &[ArgKind::Widget],
+        ret: ReturnKind::I64AsF64,
+    },
+    MethodRow {
+        method: "wheelPickerSetSelected",
+        runtime: "perry_ui_wheelpicker_set_selected",
+        args: &[ArgKind::Widget, ArgKind::I64Raw],
+        ret: ReturnKind::Void,
+    },
+    // Row typography. The wheel renders its own rows — they are not `Text`
+    // widgets — so `textSetFontSize` and friends cannot reach them, and the
+    // selected row needs a separate colour from its neighbours.
+    MethodRow {
+        method: "wheelPickerSetFontSize",
+        runtime: "perry_ui_wheelpicker_set_font_size",
+        args: &[ArgKind::Widget, ArgKind::F64],
+        ret: ReturnKind::Void,
+    },
+    MethodRow {
+        method: "wheelPickerSetFontWeight",
+        runtime: "perry_ui_wheelpicker_set_font_weight",
+        args: &[ArgKind::Widget, ArgKind::F64],
+        ret: ReturnKind::Void,
+    },
+    MethodRow {
+        method: "wheelPickerSetTextColor",
+        runtime: "perry_ui_wheelpicker_set_text_color",
+        args: &[
+            ArgKind::Widget,
+            ArgKind::F64,
+            ArgKind::F64,
+            ArgKind::F64,
+            ArgKind::F64,
+        ],
+        ret: ReturnKind::Void,
+    },
+    MethodRow {
+        method: "wheelPickerSetSelectedTextColor",
+        runtime: "perry_ui_wheelpicker_set_selected_text_color",
+        args: &[
+            ArgKind::Widget,
+            ArgKind::F64,
+            ArgKind::F64,
+            ArgKind::F64,
+            ArgKind::F64,
+        ],
+        ret: ReturnKind::Void,
+    },
     // ---- NavigationStack ----
     MethodRow {
         method: "NavStack",

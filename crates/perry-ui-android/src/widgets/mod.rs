@@ -35,6 +35,7 @@ pub mod toggle;
 pub mod tree_view;
 pub mod vstack;
 pub mod webview;
+pub mod wheel_picker;
 pub mod zstack;
 
 use jni::objects::{GlobalRef, JObject, JValue};
@@ -1242,7 +1243,7 @@ pub fn set_hugging(handle: i64, priority: f64) {
     }
 }
 
-fn argb_color(a: f64, r: f64, g: f64, b: f64) -> i32 {
+pub(crate) fn argb_color(a: f64, r: f64, g: f64, b: f64) -> i32 {
     let ai = (a * 255.0) as u32;
     let ri = (r * 255.0) as u32;
     let gi = (g * 255.0) as u32;

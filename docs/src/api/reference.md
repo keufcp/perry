@@ -2,7 +2,7 @@
 
 This page is auto-generated from Perry's compile-time API manifest (`perry-api-manifest::API_MANIFEST`). It is the source of truth for what `perry compile` accepts; references to symbols not listed here produce `R005 UnimplementedApi` (issue #463). Stubs (#464) are flagged ⚠ — they link cleanly but no-op at runtime on the chosen target.
 
-Total: 2929 entries across 124 modules.
+Total: 2937 entries across 124 modules.
 
 ## Modules
 
@@ -2709,6 +2709,7 @@ Total: 2929 entries across 124 modules.
 - `VStack` — module
 - `VStackWithInsets` — module
 - `WebView` — module
+- `WheelPicker` — module
 - `Window` — module
 - `ZStack` — module
 - `addKeyboardShortcut` — module
@@ -2794,6 +2795,13 @@ Total: 2929 entries across 124 modules.
 - `webviewGoForward` — module
 - `webviewLoadUrl` — module
 - `webviewReload` — module
+- `wheelPickerAddItem` — module
+- `wheelPickerGetSelected` — module
+- `wheelPickerSetFontSize` — module
+- `wheelPickerSetFontWeight` — module
+- `wheelPickerSetSelected` — module
+- `wheelPickerSetSelectedTextColor` — module
+- `wheelPickerSetTextColor` — module
 
 ## `perry/updater`
 

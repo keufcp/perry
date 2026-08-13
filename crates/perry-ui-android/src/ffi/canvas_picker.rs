@@ -321,6 +321,55 @@ pub extern "C" fn perry_ui_picker_set_selected(handle: i64, index: i64) {
 pub extern "C" fn perry_ui_picker_get_selected(handle: i64) -> i64 {
     widgets::picker::get_selected(handle)
 }
+
+// ---- WheelPicker (#5873) — NumberPicker drum roll ----
+
+#[no_mangle]
+pub extern "C" fn perry_ui_wheelpicker_create(on_change: f64) -> i64 {
+    // Single `Closure` arg, matching `Picker` — see #5491.
+    widgets::wheel_picker::create(on_change)
+}
+
+#[no_mangle]
+pub extern "C" fn perry_ui_wheelpicker_add_item(handle: i64, title_ptr: i64) {
+    widgets::wheel_picker::add_item(handle, title_ptr as *const u8);
+}
+
+#[no_mangle]
+pub extern "C" fn perry_ui_wheelpicker_set_selected(handle: i64, index: i64) {
+    widgets::wheel_picker::set_selected(handle, index);
+}
+
+#[no_mangle]
+pub extern "C" fn perry_ui_wheelpicker_get_selected(handle: i64) -> i64 {
+    widgets::wheel_picker::get_selected(handle)
+}
+
+#[no_mangle]
+pub extern "C" fn perry_ui_wheelpicker_set_font_size(handle: i64, size: f64) {
+    widgets::wheel_picker::set_font_size(handle, size);
+}
+
+#[no_mangle]
+pub extern "C" fn perry_ui_wheelpicker_set_font_weight(handle: i64, weight: f64) {
+    widgets::wheel_picker::set_font_weight(handle, weight);
+}
+
+#[no_mangle]
+pub extern "C" fn perry_ui_wheelpicker_set_text_color(handle: i64, r: f64, g: f64, b: f64, a: f64) {
+    widgets::wheel_picker::set_text_color(handle, r, g, b, a);
+}
+
+#[no_mangle]
+pub extern "C" fn perry_ui_wheelpicker_set_selected_text_color(
+    handle: i64,
+    r: f64,
+    g: f64,
+    b: f64,
+    a: f64,
+) {
+    widgets::wheel_picker::set_selected_text_color(handle, r, g, b, a);
+}
 #[no_mangle]
 pub extern "C" fn perry_ui_canvas_draw_image(
     h: i64,

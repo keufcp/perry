@@ -222,6 +222,7 @@ struct NodeView: View {
         case 13: List { children }
         case 14: NavigationStack { children }
         case 16: mapView
+        case 18: wheelPickerView
         default: EmptyView()
         }
     }
@@ -417,6 +418,38 @@ struct NodeView: View {
         }
         Map(coordinateRegion: .constant(region), annotationItems: pins) { item in
             MapMarker(coordinate: item.coordinate)
+        }
+    }
+
+    // Issue #5873 — WheelPicker. Same node payload as `pickerView`; the
+    // explicit `.wheel` style is the only difference, so the crown-driven
+    // drum is guaranteed rather than inherited from the platform default.
+    @ViewBuilder var wheelPickerView: some View {
+        let fontSize = perry_watchos_node_font_size(nodeId)
+        let fontWeight = perry_watchos_node_font_weight(nodeId)
+        let hasColor = perry_watchos_node_color(nodeId, 3) >= 0
+
+        let styled = pickerView
+            .pickerStyle(.wheel)
+            .foregroundColor(
+                hasColor
+                    ? Color(
+                        red: perry_watchos_node_color(nodeId, 0),
+                        green: perry_watchos_node_color(nodeId, 1),
+                        blue: perry_watchos_node_color(nodeId, 2),
+                        opacity: perry_watchos_node_color(nodeId, 3)
+                    )
+                    : .primary
+            )
+
+        if fontSize > 0 {
+            if fontWeight >= 0 {
+                styled.font(.system(size: fontSize, weight: swiftWeight(fontWeight)))
+            } else {
+                styled.font(.system(size: fontSize))
+            }
+        } else {
+            styled
         }
     }
 

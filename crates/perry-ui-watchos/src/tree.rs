@@ -29,6 +29,10 @@ pub enum NodeKind {
     MapView = 16,
     /// Issue #710 — AttributedText (per-range styled label).
     AttributedText = 17,
+    /// Issue #5873 — WheelPicker. Reuses `picker_items` / `picker_selected`,
+    /// so the Swift side's `perry_watchos_node_picker_*` bridge serves both;
+    /// only the style differs (`.pickerStyle(.wheel)`).
+    WheelPicker = 18,
 }
 
 /// A single node in the UI tree.

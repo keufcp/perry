@@ -1503,6 +1503,240 @@ function perry_ui_picker_get_selected(h) {
     return el ? el.selectedIndex : -1;
 }
 
+// --- WheelPicker Operations (#5873) ---
+// A drum roll, not a <select>: `scroll-snap-type: y mandatory` gives real
+// snap-to-item and fling deceleration from the browser's own scroller, which
+// is the whole point of the widget. Row height is fixed so the selected index
+// is just `scrollTop / ROW`, with no per-item measurement.
+const PERRY_WHEEL_ROW = 32;
+const PERRY_WHEEL_VISIBLE = 5;
+
+function perry_ui_wheelpicker_create(callback) {
+    const el = document.createElement("div");
+    const height = PERRY_WHEEL_ROW * PERRY_WHEEL_VISIBLE;
+    el.style.cssText =
+        "height:" + height + "px;overflow-y:scroll;scroll-snap-type:y mandatory;" +
+        "position:relative;text-align:center;scrollbar-width:none;";
+    // Half-row padding above and below so the first and last items can reach
+    // the centre line.
+    const pad = (height - PERRY_WHEEL_ROW) / 2;
+    const list = document.createElement("div");
+    list.style.cssText = "padding:" + pad + "px 0;";
+    el.appendChild(list);
+
+    el._perryList = list;
+    el._perryItems = [];
+    el._perrySelected = -1;
+    el._perryReported = -1;
+    el._perryCallback = typeof callback === "function" ? callback : null;
+    // Set while scrollTo() is animating a programmatic selection, so
+    // wheelPickerSetSelected does not echo back through onChange.
+    el._perryQuiet = false;
+
+    // Wheel input is normalised to whole rows; the scroll listener below still
+    // serves touch drags and scrollbar use, where the browser's snap applies.
+    el.addEventListener("wheel", (e) => perryWheelOnWheel(el, e), { passive: false });
+
+    let settle = null;
+    el.addEventListener("scroll", () => {
+        if (settle) clearTimeout(settle);
+        settle = setTimeout(() => {
+            settle = null;
+            if (!el._perryItems.length) return;
+            let index = Math.round(el.scrollTop / (el._perryRow || PERRY_WHEEL_ROW));
+            if (index < 0) index = 0;
+            if (index > el._perryItems.length - 1) index = el._perryItems.length - 1;
+            if (index === el._perrySelected) return;
+            el._perrySelected = index;
+            perryWheelPaint(el);
+            if (el._perryQuiet) return;
+            // A touch drag or scrollbar move that has come to rest: this is
+            // the choice, reported through the same one-per-gesture path.
+            perryWheelReport(el);
+        }, 80);
+    });
+
+    return wrapWidget(allocHandle(el));
+}
+
+function perryWheelPaint(el) {
+    const rows = el._perryList.children;
+    const st = el._perryStyle || {};
+    for (let i = 0; i < rows.length; i++) {
+        const on = i === el._perrySelected;
+        // Without an app font size the selected row is emphasised, which is
+        // the depth cue that makes an undecorated column read as a drum. Once
+        // the app picks a size and weight, every row uses them so the text
+        // does not jump as it scrolls.
+        rows[i].style.fontSize = st.size ? st.size + "px" : "";
+        rows[i].style.fontWeight = st.weight != null ? String(st.weight) : (on ? "600" : "400");
+        const color = on ? (st.selectedColor || st.color) : st.color;
+        rows[i].style.color = color || "";
+        rows[i].style.opacity = (st.color || st.selectedColor) ? "1" : (on ? "1" : "0.45");
+    }
+    if (st.size) {
+        const row = Math.max(PERRY_WHEEL_ROW, Math.round(st.size * 1.6));
+        el._perryRow = row;
+        for (let i = 0; i < rows.length; i++) {
+            rows[i].style.height = row + "px";
+            rows[i].style.lineHeight = row + "px";
+        }
+        const height = row * PERRY_WHEEL_VISIBLE;
+        el.style.height = height + "px";
+        el._perryList.style.padding = ((height - row) / 2) + "px 0";
+    }
+    perryWheelBand(el, el._perryRow || PERRY_WHEEL_ROW);
+}
+
+// The band marking the selection. Painted as the scroller's background rather
+// than as child elements: `background-attachment` defaults to `scroll`, which
+// pins the background to the element's own box while the rows scroll past it.
+function perryWheelBand(el, row) {
+    const a = "calc(50% - " + (row / 2) + "px)";
+    const b = "calc(50% - " + (row / 2 - 1) + "px)";
+    const c = "calc(50% + " + (row / 2) + "px)";
+    const d = "calc(50% + " + (row / 2 + 1) + "px)";
+    el.style.backgroundImage =
+        "linear-gradient(to bottom, transparent " + a + ", #a59e9e " + a +
+        ", #a59e9e " + b + ", transparent " + b + ", transparent " + c +
+        ", #a59e9e " + c + ", #a59e9e " + d + ", transparent " + d + ")";
+    el.style.backgroundRepeat = "no-repeat";
+}
+
+// Scroll the selected row into the band.
+//
+// Widgets are built before they are in the document, and an element with no
+// layout silently ignores `scrollTop` — which left the wheel showing row 0
+// while reporting the selection the app had asked for. Retry on animation
+// frames until the assignment sticks, bounded so a target that can never be
+// reached cannot spin forever.
+function perryWheelAnchor(el, tries) {
+    if (!el || el._perrySelected < 0) return;
+    const target = el._perrySelected * (el._perryRow || PERRY_WHEEL_ROW);
+    el._perryQuiet = true;
+    el.scrollTop = target;
+    setTimeout(() => { el._perryQuiet = false; }, 120);
+    if (Math.abs(el.scrollTop - target) > 1 && (tries || 0) < 30) {
+        requestAnimationFrame(() => perryWheelAnchor(el, (tries || 0) + 1));
+    }
+}
+
+// Hand the settled selection to the app, once.
+//
+// `onChange` reports a CHOICE, not the rows that flew past on the way to it,
+// so it fires when motion stops — matching `Picker`, and matching what
+// UIPickerView can actually deliver, which is what lets the contract be
+// identical on every backend.
+function perryWheelReport(el) {
+    if (!el || !el._perryItems.length) return;
+    if (el._perrySelected === el._perryReported) return;
+    el._perryReported = el._perrySelected;
+    if (el._perryCallback) el._perryCallback(el._perrySelected);
+}
+
+// Move the selection by whole rows and glide to it, reporting once it stops.
+function perryWheelStep(el, delta) {
+    if (!el || !el._perryItems.length || delta === 0) return;
+    const max = el._perryItems.length - 1;
+    const from = el._perrySelected < 0 ? 0 : el._perrySelected;
+    const to = Math.max(0, Math.min(max, from + delta));
+    if (to === from) return;
+    el._perrySelected = to;
+    perryWheelPaint(el);
+    // Glide rather than jump: this is the drum turning.
+    el._perryQuiet = true;
+    el.scrollTo({ top: to * (el._perryRow || PERRY_WHEEL_ROW), behavior: "smooth" });
+    clearTimeout(el._perryQuietTimer);
+    el._perryQuietTimer = setTimeout(() => { el._perryQuiet = false; }, 400);
+    // Debounced settle: a run of notches is one gesture, so it is one choice.
+    clearTimeout(el._perrySettleTimer);
+    el._perrySettleTimer = setTimeout(() => perryWheelReport(el), 180);
+}
+
+// A mouse notch is ONE row, the way a native picker behaves. Browsers report
+// roughly 100px per notch, so leaving the scroller to interpret it skips rows
+// whenever the row height does not divide that — 3 notches moved 4 rows.
+// A precision trackpad still accumulates pixels so slow drags move smoothly.
+function perryWheelOnWheel(el, e) {
+    e.preventDefault();
+    const row = el._perryRow || PERRY_WHEEL_ROW;
+    let steps;
+    if (e.deltaMode !== 0 || Math.abs(e.deltaY) >= 40) {
+        steps = Math.sign(e.deltaY);
+    } else {
+        el._perryWheelAccum = (el._perryWheelAccum || 0) + e.deltaY;
+        steps = Math.trunc(el._perryWheelAccum / row);
+        if (steps !== 0) el._perryWheelAccum -= steps * row;
+    }
+    perryWheelStep(el, steps);
+}
+
+function perryWheelStyle(h, patch) {
+    const el = getHandle(h);
+    if (!el) return;
+    el._perryStyle = Object.assign({}, el._perryStyle, patch);
+    perryWheelPaint(el);
+    // Row height may have changed, so re-anchor the scroll on the selection.
+    perryWheelAnchor(el, 0);
+}
+
+function perryWheelRgba(r, g, b, a) {
+    const c = (v) => Math.max(0, Math.min(255, Math.round(v * 255)));
+    return "rgba(" + c(r) + "," + c(g) + "," + c(b) + "," + a + ")";
+}
+
+function perry_ui_wheelpicker_set_font_size(h, size) {
+    perryWheelStyle(h, { size: size });
+}
+
+function perry_ui_wheelpicker_set_font_weight(h, weight) {
+    perryWheelStyle(h, { weight: weight });
+}
+
+function perry_ui_wheelpicker_set_text_color(h, r, g, b, a) {
+    perryWheelStyle(h, { color: perryWheelRgba(r, g, b, a) });
+}
+
+function perry_ui_wheelpicker_set_selected_text_color(h, r, g, b, a) {
+    perryWheelStyle(h, { selectedColor: perryWheelRgba(r, g, b, a) });
+}
+
+function perry_ui_wheelpicker_add_item(h, title) {
+    const el = getHandle(h);
+    if (!el) return;
+    const row = document.createElement("div");
+    row.textContent = title;
+    row.style.cssText =
+        "height:" + PERRY_WHEEL_ROW + "px;line-height:" + PERRY_WHEEL_ROW +
+        "px;scroll-snap-align:center;";
+    el._perryList.appendChild(row);
+    el._perryItems.push(title);
+    // First item lands as the selection without firing onChange — matching the
+    // native backends, where adding items does not count as a user choice.
+    if (el._perrySelected < 0) {
+        el._perrySelected = 0;
+        el._perryReported = 0;
+    }
+    perryWheelPaint(el);
+    perryWheelAnchor(el, 0);
+}
+
+function perry_ui_wheelpicker_set_selected(h, index) {
+    const el = getHandle(h);
+    if (!el || index < 0 || index >= el._perryItems.length) return;
+    el._perrySelected = index;
+    // Programmatic: not a choice, but it becomes the baseline the next settle
+    // is compared against.
+    el._perryReported = index;
+    perryWheelPaint(el);
+    perryWheelAnchor(el, 0);
+}
+
+function perry_ui_wheelpicker_get_selected(h) {
+    const el = getHandle(h);
+    return el && el._perryItems.length ? el._perrySelected : -1;
+}
+
 // --- Image Operations ---
 function perry_ui_image_create_symbol(name) {
     const el = document.createElement("span");
@@ -3686,6 +3920,15 @@ window.__perry = {
     perry_ui_picker_add_item,
     perry_ui_picker_set_selected,
     perry_ui_picker_get_selected,
+    // WheelPicker (#5873)
+    perry_ui_wheelpicker_create,
+    perry_ui_wheelpicker_add_item,
+    perry_ui_wheelpicker_set_selected,
+    perry_ui_wheelpicker_get_selected,
+    perry_ui_wheelpicker_set_font_size,
+    perry_ui_wheelpicker_set_font_weight,
+    perry_ui_wheelpicker_set_text_color,
+    perry_ui_wheelpicker_set_selected_text_color,
     // Image
     perry_ui_image_create_symbol,
     perry_ui_image_create_url,
